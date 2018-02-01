@@ -1,0 +1,7 @@
+#!/bin/bash
+
+cd /config/www/kanboard || exit;
+
+s6-setuidgid alpine exec ./cli worker
+
+

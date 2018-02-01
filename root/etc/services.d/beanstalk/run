@@ -1,0 +1,4 @@
+#!/bin/bash
+
+s6-setuidgid alpine exec beanstalkd
+

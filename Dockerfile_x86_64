@@ -1,0 +1,56 @@
+ARG ARCH=frommakefile
+ARG DOCKERSRC=frommakefile
+ARG USERNAME=frommakefile
+#
+FROM ${USERNAME}/${DOCKERSRC}:${ARCH}
+#
+ARG PUID=1000
+ARG PGID=1000
+#
+ENV KANBOARD_SRC=/opt/kanboard/kanboard-latest.zip \
+	PLUGIN_BEANSTALK_SRC=/opt/kanboard/kanboard-plugin-beanstalk.zip
+RUN set -xe \
+	&& apk add --no-cache --purge -uU \
+		beanstalkd \
+		curl \
+		mailx \
+		sqlite \
+		ssmtp \
+		unzip \
+#
+		php7-ctype \
+		php7-dom \
+		php7-gd \
+		php7-iconv \
+		php7-intl \
+		php7-mcrypt \
+		php7-mysqli \
+		php7-mysqlnd \
+		php7-opcache \
+		php7-pdo_mysql \
+		php7-pdo_pgsql \
+		php7-pdo_sqlite \
+		php7-pgsql \
+		php7-posix \
+		php7-session \
+		php7-simplexml \
+		php7-sockets \
+		php7-sqlite3 \
+		php7-xml \
+		php7-zip \
+		php7-zlib \
+#
+	&& mkdir -p /opt/kanboard \
+	&& VERSION=$(curl -sX GET "https://api.github.com/repos/kanboard/kanboard/releases/latest" \
+			| awk '/tag_name/{print $4;exit}' FS='[""]') \
+	&& echo "Kanboard version: ${VERSION}" > /opt/kanboard/version \
+	&& curl -o ${KANBOARD_SRC} -SL "https://github.com/kanboard/kanboard/archive/${VERSION}.zip" \
+	&& VERSION=$(curl -sX GET "https://api.github.com/repos/kanboard/plugin-beanstalk/releases/latest" \
+			| awk '/tag_name/{print $4;exit}' FS='[""]' | sed 's_^v__') \
+	&& echo "Plugin-beanstalk version: ${VERSION}" > /opt/kanboard/plugin_beanstalk_version \
+	&& curl -o ${PLUGIN_BEANSTALK_SRC} -SL "https://github.com/kanboard/plugin-beanstalk/releases/download/v${VERSION}/Beanstalk-${VERSION}.zip" \
+	&& rm -rf /var/cache/apk/* /tmp/*
+# add local files
+COPY root/ /
+# ports, volumes etc from php
+# ENTRYPOINT ["/init"]

@@ -1,0 +1,37 @@
+#!/usr/bin/with-contenv bash
+
+# application specific configurations
+
+[[ ! -f /var/spool/cron/crontabs/nginx  ]] && \
+        cp /defaults/cronjob /var/spool/cron/crontabs/nginx
+
+[[ ! -f /config/www/kanboard/index.php ]] && (
+
+    echo "Setting up Kanboard at /config/www/kanboard";
+    # create our folders/files
+    mkdir -p \
+        /config/www/kanboard \
+        /config/log/kanboard
+
+    # install kanboard
+    unzip -q ${KANBOARD_SRC} -d /tmp
+    mv /tmp/kanboard-*/* config/www/kanboard/
+    rm -rf /tmp/kanboard-*
+
+    # copy default config
+    cp /defaults/config.php /config/www/kanboard/config.php
+
+    # plugins
+    unzip -q ${PLUGIN_BEANSTALK_SRC} -d /config/www/kanboard/plugins/
+
+    touch /config/log/kanboard/{access,error}_kanboard_log
+
+) || echo "Kanboard Installation found";
+
+# permissions
+chown -R alpine:alpine \
+    /config \
+    /var/tmp/nginx \
+    /config/www/kanboard
+
+echo "Done";
