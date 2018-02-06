@@ -1,0 +1,54 @@
+server {
+    listen 80 default_server;
+    listen [::]:80 default_server;
+
+    root WEBDIR;
+    index index.html index.htm index.php;
+
+    keepalive_requests    10;
+    keepalive_timeout     60 60;
+
+    server_name _http;
+
+    charset utf-8;
+
+    error_page 500 502 503 504  /50x.html;
+    location = /50x.html { root   /usr/share/nginx/html; }
+
+    client_max_body_size 0;
+
+    location / { try_files $uri $uri/ /index.php$is_args$args; }
+
+    # Deny access to the directory data
+    location ~* /data {
+        deny all;
+        return 404;
+    }
+    location ~* ^.+\.(log|sqlite)$ { return 404; }
+    location ~ /\.ht { return 404; }
+    location ~* ^.+\.(ico|jpg|gif|png|css|js|svg|eot|ttf|woff|woff2|otf)$ {
+        log_not_found off;
+        expires 7d;
+        etag on;
+    }
+
+    location ~ \.php$ {
+        # Prevents autofixing of path which could be used for exploit
+        try_files $uri =404;
+        fastcgi_split_path_info ^(.+\.php)(/.+)$;
+        # With php5-cgi alone:
+        # fastcgi_pass 127.0.0.1:9000;
+        # With php5-fpm:
+        fastcgi_pass unix:/var/run/php-fpm.sock;
+        fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
+        fastcgi_index index.php;
+        include /etc/nginx/fastcgi_params;
+        fastcgi_param SERVER_NAME $host;
+
+        fastcgi_buffers 16 16k;
+        fastcgi_buffer_size 32k;
+        fastcgi_connect_timeout 300;
+        fastcgi_send_timeout 300;
+        fastcgi_read_timeout 300;
+    }
+}

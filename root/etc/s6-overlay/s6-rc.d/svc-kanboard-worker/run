@@ -1,0 +1,13 @@
+#!/usr/bin/with-contenv bash
+set -e
+
+ROOTDIR="${ROOTDIR:-/config}";
+WEBDIR="${WEBDIR:-$ROOTDIR/www}";
+KANBOARDDIR="${KANBOARDDIR:-$WEBDIR/kanboard}"; # note: no ending /
+# KANBOARD_WORKER_ARGS="";
+
+cd ${KANBOARDDIR} || exit 1;
+
+s6-setuidgid ${S6_USER:-alpine} \
+exec \
+    ./cli worker ${KANBOARD_WORKER_ARGS};
