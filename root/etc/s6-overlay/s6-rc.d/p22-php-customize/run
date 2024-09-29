@@ -1,0 +1,135 @@
+#!/usr/bin/with-contenv bash
+set -e
+
+vecho () { if [ "${S6_VERBOSITY:-1}" -gt 0 ]; then echo "[$0] $@"; fi; }
+
+# application specific configurations
+
+ROOTDIR="${ROOTDIR:-/config}";
+WEBDIR="${WEBDIR:-$ROOTDIR/www}";
+
+# KANBOARD_SRC="${KANBOARD_SRC:-/opt/kanboard/kanboard-${VERSION}.zip}"; # set in Dockerfile
+KANBOARDDIR="${KANBOARDDIR:-$WEBDIR/kanboard}"; # note: no ending /
+SRCVERSION="$(cat /opt/kanboard/version 2>/dev/null)";
+
+kb_bkp () { # backup currently installed kanboard
+    KANBOARD_BACKUPDIR="${KANBOARD_BACKUPDIR:-$(dirname ${KANBOARDDIR})}";
+    INSTVERSION="$(cat ${KANBOARDDIR}/version.txt 2>/dev/null)"; #
+    vecho "Backing up current Kanboard (${INSTVERSION}) installation in ${KANBOARDDIR}";
+    vecho "to ${KANBOARD_BACKUPDIR}/kanboard-${INSTVERSION}-$(date -I).zip";
+    zip -b /tmp -rq \
+        "${KANBOARD_BACKUPDIR}/kanboard-${INSTVERSION}-$(date -I).zip" \
+        ${KANBOARDDIR}/ \
+        ;
+    res=$?;
+    if [ "$res" = "0" ]; then vecho "Back up complete."
+    else vecho "Error backing up Kanboard.";
+    fi
+    return $res;
+}
+
+kb_clean () {
+    KANBOARD_PRESERVEFILES="${KANBOARD_PRESERVEFILES:-data,plugins,config.php}";
+    vecho "Clean up current Kanboard installation in ${KANBOARDDIR} except ${KANBOARD_PRESERVEFILES}";
+    find "${KANBOARDDIR}" -maxdepth 1 -mindepth 1 \
+        | grep -v -Ee "(${KANBOARD_PRESERVEFILES//,/|})" \
+        | xargs rm -rf \
+        ;
+    res=$?;
+    if [ "$res" = "0" ]; then vecho "Clean up complete."
+    else vecho "Error cleaning up Kanboard.";
+    fi
+    return $res;
+}
+
+kb_install () { # install kanboard
+    vecho "Installing Kanboard ${SRCVERSION} at ${KANBOARDDIR}";
+    unzip \
+        -d /tmp \
+        -q ${KANBOARD_SRC} \
+    && cp -pPr \
+        /tmp/kanboard-${SRCVERSION}/* \
+        -t ${KANBOARDDIR}/ \
+    && cp /opt/kanboard/version ${KANBOARDDIR}/version.txt \
+    && rm -rf /tmp/kanboard-${SRCVERSION}/;
+    res=$?;
+    if [ "$res" = "0" ]; then vecho "Installation complete."
+    else vecho "Error installing Kanboard.";
+    fi
+    return $res;
+}
+
+kb_postinstall () {
+    # substitute default config if not exists
+    _subst () {
+        sed \
+        -e "s|YOUR_KANBOARD_URL|${KANBOARD_URL:-http://localhost/kanboard/}|g" \
+        $1 > $2;
+    }
+    if [ ! -f "${KANBOARDDIR}/config.php" ];
+    then
+        vecho "Setting up default Kanboard configurations at ${KANBOARDDIR}/config.php";
+        _subst /defaults/config.php ${KANBOARDDIR}/config.php;
+    fi
+
+    # only written to if using logging to file, nginx by default writes to stdout/stderr
+    touch ${ROOTDIR}/log/kanboard/{access,error}_kanboard_log;
+
+    # ensure plugin beanstalk exists
+    if [ ! -f "${KANBOARDDIR}/plugins/Beanstalk/Plugin.php" ];
+    then
+        BSVERSION="$(cat /opt/kanboard/plugin_beanstalk_version 2>/dev/null)";
+        vecho "Setting up Kanboard plugin 'beanstalk' ${BSVERSION} at ${KANBOARDDIR}/plugins/";
+        unzip \
+            -d ${KANBOARDDIR}/plugins/ \
+            -q ${PLUGIN_BEANSTALK_SRC} \
+            ;
+    else
+        vecho "Kanboard plugin 'beanstalk' installation found";
+        # updates managed via Admin UI
+    fi;
+
+    KANBOARD_CRONJOB="${KANBOARD_CRONJOB:-/defaults/cronjob.sh}";
+    KANBOARD_CRONTIME="${KANBOARD_CRONTIME:-0 8 * * *}";
+    KANBOARD_CRONFILE="${KANBOARD_CRONFILE:-/etc/crontabs/root}";
+    if [ -z "${SKIP_CRON}" ] \
+    && [ -z $(grep -o -Ee "${KANBOARD_CRONJOB}" ${KANBOARD_CRONFILE}) ]; # does not already exist
+    then
+        vecho "Adding Kanboard default cron script ${KANBOARD_CRONJOB}";
+        vecho "in ${KANBOARD_CRONFILE}";
+        vecho "with cron ${KANBOARD_CRONTIME} timings.";
+        echo -e "${KANBOARD_CRONTIME} ${KANBOARD_CRONJOB} >/dev/stdout 2>/dev/stderr\n" >> ${KANBOARD_CRONFILE};
+    fi;
+}
+
+# create our folders/files
+vecho "Ensure configuration directories exist.";
+mkdir -p \
+    ${KANBOARDDIR} \
+    ${ROOTDIR}/log/kanboard \
+    ;
+
+# ensure kanboard setup (ignore if already setup)
+if [ ! -f "${KANBOARDDIR}/index.php" ];
+then
+    vecho "Setting up Kanboard ${SRCVERSION} at ${KANBOARDDIR}";
+    kb_install;
+    kb_postinstall;
+else
+    vecho "Kanboard installation found";
+    if [ -n "${KANBOARD_UPDATE}" ]; # unset by default
+    then
+        kb_bkp \
+        && kb_clean \
+        && kb_install \
+        && kb_postinstall;
+    fi
+fi;
+
+# fix permissions
+vecho "Fixing permissions.";
+chown -R \
+    ${S6_USER:-alpine}:${S6_USER:-alpine} \
+    "${KANBOARDDIR}" \
+    "$ROOTDIR/log/kanboard" \
+    ;
