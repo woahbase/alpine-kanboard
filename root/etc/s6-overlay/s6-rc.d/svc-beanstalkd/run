@@ -10,4 +10,5 @@ cd ${KANBOARDDIR} || exit 1;
 
 s6-setuidgid ${S6_USER:-alpine} \
 exec \
-    beanstalkd ${KANBOARD_BEANSTALKD_ARGS};
+    beanstalkd \
+    ${KANBOARD_BEANSTALKD_ARGS};

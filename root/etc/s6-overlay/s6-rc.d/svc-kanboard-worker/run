@@ -10,4 +10,5 @@ cd ${KANBOARDDIR} || exit 1;
 
 s6-setuidgid ${S6_USER:-alpine} \
 exec \
-    ./cli worker ${KANBOARD_WORKER_ARGS};
+    ./cli worker \
+    ${KANBOARD_WORKER_ARGS};

@@ -128,8 +128,8 @@ fi;
 
 # fix permissions
 vecho "Fixing permissions.";
-chown -R \
-    ${S6_USER:-alpine}:${S6_USER:-alpine} \
-    "${KANBOARDDIR}" \
-    "$ROOTDIR/log/kanboard" \
-    ;
+find "${KANBOARDDIR}" "$ROOTDIR/log/kanboard" \
+    \! -user ${S6_USER:-alpine} -exec \
+    chown --no-dereference \
+    ${S6_USER:-alpine}:${PGID:-1000} \
+    '{}' +;
