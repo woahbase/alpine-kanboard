@@ -127,9 +127,13 @@ else
 fi;
 
 # fix permissions
-vecho "Fixing permissions.";
-find "${KANBOARDDIR}" "$ROOTDIR/log/kanboard" \
-    \! -user ${S6_USER:-alpine} -exec \
-    chown --no-dereference \
-    ${S6_USER:-alpine}:${PGID:-1000} \
-    '{}' +;
+if [ -z "${PHP_SKIP_PERMFIX}" ] \
+&& [ "X${EUID}" == "X0" ]; # requires root
+then
+    vecho "Fixing permissions.";
+    find "${KANBOARDDIR}" "$ROOTDIR/log/kanboard" \
+        \! -user ${S6_USER:-alpine} -exec \
+        chown --no-dereference \
+        ${S6_USER:-alpine}:${PGID:-1000} \
+        '{}' +;
+fi;
