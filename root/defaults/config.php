@@ -47,7 +47,7 @@ define('MAIL_FROM', 'replace-me@kanboard.local');
 // E-mail address used for the "Bcc" header to send a copy of all notifications
 define('MAIL_BCC', '');
 
-// Mail transport available: "smtp", "sendmail", "mail" (PHP mail function), "postmark", "mailgun", "sendgrid"
+// Mail transport available: "smtp", "sendmail", "mail" (PHP mail function)
 define('MAIL_TRANSPORT', 'mail');
 
 // SMTP configuration to use when the "smtp" transport is chosen
@@ -289,8 +289,20 @@ define('SHOW_GROUP_MEMBERSHIPS_IN_USERLIST', true);
 // If set to 0 ALL group-memberships will be listed (7 by default)
 define('SHOW_GROUP_MEMBERSHIPS_IN_USERLIST_WITH_LIMIT', 7);
 
-// Dashboard settings
+// Maximum number of projects displayed in the dashboard
 define('DASHBOARD_MAX_PROJECTS', 10);
+
+// Comma separated list of trusted proxy headers, for example: "HTTP_X_REAL_IP,HTTP_X_FORWARDED_FOR"
+define('TRUSTED_PROXY_HEADERS', '');
+
+// Comma separated list of trusted proxy IP networks (CIDR), for example: "192.168.0.0/16,10.0.0.0/8,::1/128"
+define('TRUSTED_PROXY_NETWORKS', '');
+
+// Allow private network access when fetching metadata for external links
+define('EXTERNAL_LINK_ALLOW_PRIVATE_NETWORKS', false);
+
+// Allow private network access for webhook notifications
+define('WEBHOOK_ALLOW_PRIVATE_NETWORKS', false);
 
 // put kanboard in proper subfolder
 define('KANBOARD_URL', 'YOUR_KANBOARD_URL');

@@ -41,7 +41,6 @@ RUN set -xe \
         php${PHPMAJMIN}-json \
         php${PHPMAJMIN}-ldap \
         php${PHPMAJMIN}-mbstring \
-        php${PHPMAJMIN}-opcache \
         php${PHPMAJMIN}-openssl \
         php${PHPMAJMIN}-pdo \
         php${PHPMAJMIN}-pdo_mysql \
@@ -93,7 +92,7 @@ HEALTHCHECK \
     --start-period=5m \
     --timeout=10s \
     CMD \
-    wget --quiet --tries=1 --no-check-certificate --spider ${HEALTHCHECK_URL:-"http://localhost:80/kanboard/"} || exit 1
+    wget --quiet --tries=1 --no-check-certificate --spider ${HEALTHCHECK_URL:-"http://localhost:80/kanboard/healthcheck.php"} || exit 1
 #
 # ports, entrypoint etc from nginx
 # ENTRYPOINT ["/init"]

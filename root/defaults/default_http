@@ -3,7 +3,7 @@ server {
     listen [::]:80 default_server;
 
     root WEBDIR;
-    index index.html index.htm index.php;
+    index index.php;
 
     keepalive_requests    10;
     keepalive_timeout     60 60;
@@ -13,7 +13,7 @@ server {
     charset utf-8;
 
     error_page 500 502 503 504  /50x.html;
-    location = /50x.html { root   /usr/share/nginx/html; }
+    location = /50x.html { root   /var/lib/nginx/html; }
 
     client_max_body_size 0;
 
@@ -44,6 +44,8 @@ server {
         fastcgi_index index.php;
         include /etc/nginx/fastcgi_params;
         fastcgi_param SERVER_NAME $host;
+        fastcgi_param HTTP_X_REAL_IP $remote_addr;
+        fastcgi_param HTTP_X_FORWARDED_FOR $proxy_add_x_forwarded_for;
 
         fastcgi_buffers 16 16k;
         fastcgi_buffer_size 32k;
