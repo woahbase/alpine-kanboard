@@ -19,20 +19,7 @@ server {
 
     location / { try_files $uri $uri/ /index.php$is_args$args; }
 
-    # Deny access to the directory data
-    location ~* /data {
-        deny all;
-        return 404;
-    }
-    location ~* ^.+\.(log|sqlite)$ { return 404; }
-    location ~ /\.ht { return 404; }
-    location ~* ^.+\.(ico|jpg|gif|png|css|js|svg|eot|ttf|woff|woff2|otf)$ {
-        log_not_found off;
-        expires 7d;
-        etag on;
-    }
-
-    location ~ \.php$ {
+    location ~ /(index|jsonrpc|healthcheck)\.php(/|$) {
         # Prevents autofixing of path which could be used for exploit
         try_files $uri =404;
         fastcgi_split_path_info ^(.+\.php)(/.+)$;
@@ -52,5 +39,16 @@ server {
         fastcgi_connect_timeout 300;
         fastcgi_send_timeout 300;
         fastcgi_read_timeout 300;
+    }
+
+    location ~ /(app|libs|vendor|data)/ { return 404; }
+    location ~ /cli$ { return 404; }
+    location ~ \.php$ { return 404; }
+    location ~* \.(log|sqlite)$ { return 404; }
+    location ~ /\. { return 404; }
+    location ~* ^.+\.(ico|jpg|gif|png|css|js|svg|eot|ttf|woff|woff2|otf)$ {
+        log_not_found off;
+        expires 7d;
+        etag on;
     }
 }
